@@ -30,6 +30,10 @@ def options(opt):
         '--run_tests', default=False, action='store_true',
         help='Run all unit tests')
 
+    opt.add_option(
+        '--pytest_basetemp', default='pytest_temp',
+        help='Set the basetemp folder where pytest executes the tests')
+
 
 def build(bld):
 
@@ -79,14 +83,12 @@ def upload(bld):
 
 def _pytest(bld):
 
-    with bld.create_virtualenv(cwd=bld.bldnode.abspath()) as venv:
+    with bld.create_virtualenv(cwd=bld.path.abspath()) as venv:
 
-        venv.run('python -m pip install pytest')
+        venv.run('pip install pytest')
 
-        # Install the pytest-testdirectory plugin in the virtualenv
-        wheel = _find_wheel(ctx=bld)
-
-        venv.run('python -m pip install {}'.format(wheel))
+        pytest_vagrant = 'git+https://github.com/steinwurf/pytest-vagrant.git@872df76'
+        venv.run('pip install {}'.format(pytest_vagrant))
 
         # We override the pytest temp folder with the basetemp option,
         # so the test folders will be available at the specified location
@@ -106,7 +108,8 @@ def _pytest(bld):
         os.makedirs(basetemp)
 
         # Main test command
-        command = 'python -B -m pytest {} --basetemp {}'.format(
-            testdir.abspath(), os.path.join(basetemp, 'unit_tests'))
+        command = 'python -B -m pytest {} --basetemp {} --vagrantfile {} --vagrantreset'.format(
+            testdir.abspath(), os.path.join(basetemp, 'unit_tests'),
+            os.path.join(testdir.abspath(), 'data'))
 
         venv.run(command)

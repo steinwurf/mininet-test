@@ -12,10 +12,12 @@ $mininet = <<SCRIPT
   popd
 SCRIPT
 
-$iperf = <<SCRIPT
-  echo "mininet"
-  sudo apt-get install -y iperf3
+$python = <<SCRIPT
+  echo "pip"
+  sudo apt-get update
+  sudo apt-get install -y python-pip
 SCRIPT
+
 
 Vagrant.configure("2") do |config|
   config.vm.box = "generic/ubuntu1804"
@@ -27,7 +29,7 @@ Vagrant.configure("2") do |config|
 
   ## Provisioning
   config.vm.provision :shell, privileged: false, :inline => $mininet
-  config.vm.provision :shell, privileged: false, :inline => $iperf
+  config.vm.provision :shell, privileged: false, :inline => $python
 
   ## SSH config
   config.ssh.forward_x11 = false
