@@ -62,7 +62,8 @@ class TestMonitor(object):
             process = self.running[fd].process
             process.poll()
             if process.returncode:
-                assert 0
+                raise RuntimeError(
+                    "Process exited with error {}".format(self.running[fd]))
             process.terminate()
             process.wait()
 
