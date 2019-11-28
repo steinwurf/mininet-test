@@ -8,9 +8,11 @@ class PendingResult(object):
         self.cwd = cwd
         self.result = None
 
-    def match(self, stdout=None, stderr=None):
+    def poll_result(self):
+
         if self.result:
-            self.result.match(stdout=stdout, stderr=stderr)
+            return self.result
+
         self.process.poll()
         if self.process.returncode is None:
             raise RuntimeError("Process {} in {} not terminated "
@@ -21,4 +23,8 @@ class PendingResult(object):
             stdout=self.process.stdout.read(),
             stderr=self.process.stderr.read(),
             returncode=self.process.returncode)
-        self.result.match(stdout=stdout, stderr=stderr)
+
+        return self.result
+
+
+

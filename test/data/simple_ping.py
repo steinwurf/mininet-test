@@ -68,8 +68,11 @@ if __name__ == '__main__':
         if time.time() >= end_time:
             raise RuntimeError("Test timeout!")
 
-    h1_ping.match(stdout="* 0% packet loss*")
-    h2_ping.match(stdout="* 0% packet loss*")
+    h1_result = h1_ping.poll_result()
+    h2_result = h2_ping.poll_result()
+
+    h1_result.match(stdout="* 0% packet loss*")
+    h2_result.match(stdout="* 0% packet loss*")
 
     test_monitor.stop()
     net.stop()

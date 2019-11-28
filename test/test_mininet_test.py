@@ -2,21 +2,13 @@ import os
 import glob
 
 
-def test_run(sshdirectory):
+def test_run(testdirectory):
 
-    wheels = glob.glob("dist/*.whl")
+    print(testdirectory.path())
 
-    if len(wheels) != 1:
-        raise RuntimeError(
-            "Unexpected number of wheels found {}".format(wheels))
+    testdirectory.copy_file(filename="test/data/simple_ping.py")
 
-    wheel_path = wheels[0]
-    wheel_filename = os.path.basename(wheel_path)
+    # Make sudo use our venv path (https://unix.stackexchange.com/a/83194)
+    sudo_path = 'PATH={}'.format(os.getenv("PATH"))
 
-    # Install the mininet_test pip package
-    sshdirectory.put_file(wheel_path)
-    sshdirectory.run('python -m pip install {}'.format(wheel_filename))
-
-    # Run the mininet script
-    sshdirectory.put_file('test/data/simple_ping.py')
-    sshdirectory.run('sudo python simple_ping.py')
+    testdirectory.run('sudo {} python simple_ping.py'.format(sudo_path))

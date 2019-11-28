@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 # encoding: utf-8
 
+from waflib.Build import BuildContext
 import os
 import sys
 import shutil
@@ -15,8 +16,6 @@ import waflib
 top = '.'
 
 VERSION = '1.0.0'
-
-from waflib.Build import BuildContext
 
 
 class UploadContext(BuildContext):
@@ -35,12 +34,18 @@ def options(opt):
         help='Set the basetemp folder where pytest executes the tests')
 
 
+def configure(conf):
+
+    # We look for mininet needed to run the unit tests
+    conf.find_program('mn', mandatory=True)
+
+
 def build(bld):
 
     # Create a virtualenv in the source folder and build universal wheel
     # Make sure the virtualenv Python module is in path
-    with bld.create_virtualenv(cwd=bld.bldnode.abspath()) as venv:
-        venv.pip_install(packages=['wheel'])
+    with bld.create_virtualenv(cwd=bld.path.abspath()) as venv:
+        venv.run(cmd='python -m pip install wheel')
         venv.run(cmd='python setup.py bdist_wheel --universal',
                  cwd=bld.path.abspath())
 
@@ -73,7 +78,7 @@ def _find_wheel(ctx):
 def upload(bld):
     """ Upload the built wheel to PyPI (the Python Package Index) """
 
-    with bld.create_virtualenv(cwd=bld.bldnode.abspath()) as venv:
+    with bld.create_virtualenv(cwd=bld.path.abspath()) as venv:
         venv.pip_install(packages=['twine'])
 
         wheel = _find_wheel(ctx=bld)
@@ -83,33 +88,37 @@ def upload(bld):
 
 def _pytest(bld):
 
-    with bld.create_virtualenv(cwd=bld.path.abspath()) as venv:
+    # We need to be able to import mininet, which is a system package
+    venv = bld.create_virtualenv(
+        cwd=bld.path.abspath(), system_site_packages=True)
 
-        venv.run('pip install pytest')
+    venv.run(cmd='python -m pip install pytest')
+    venv.run(cmd='python -m pip install pytest-testdirectory')
 
-        pytest_vagrant = 'git+https://github.com/steinwurf/pytest-vagrant.git@872df76'
-        venv.run('pip install {}'.format(pytest_vagrant))
+    # Install the mininet-test plugin in the virtualenv
+    wheel = _find_wheel(ctx=bld)
 
-        # We override the pytest temp folder with the basetemp option,
-        # so the test folders will be available at the specified location
-        # on all platforms. The default location is the "pytest" local folder.
-        basetemp = os.path.abspath(os.path.expanduser(
-            bld.options.pytest_basetemp))
+    venv.run(cmd='python -m pip install {}'.format(wheel))
 
-        # We need to manually remove the previously created basetemp folder,
-        # because pytest uses os.listdir in the removal process, and that fails
-        # if there are any broken symlinks in that folder.
-        if os.path.exists(basetemp):
-            waflib.extras.wurf.directory.remove_directory(path=basetemp)
+    # We override the pytest temp folder with the basetemp option,
+    # so the test folders will be available at the specified location
+    # on all platforms. The default location is the "pytest" local folder.
+    basetemp = os.path.abspath(os.path.expanduser(
+        bld.options.pytest_basetemp))
 
-        testdir = bld.path.find_node('test')
+    # We need to manually remove the previously created basetemp folder,
+    # because pytest uses os.listdir in the removal process, and that fails
+    # if there are any broken symlinks in that folder.
+    if os.path.exists(basetemp):
+        waflib.extras.wurf.directory.remove_directory(path=basetemp)
 
-        # Make the basetemp directory
-        os.makedirs(basetemp)
+    testdir = bld.path.find_node('test')
 
-        # Main test command
-        command = 'python -B -m pytest {} --basetemp {} --vagrantfile {} --vagrantreset'.format(
-            testdir.abspath(), os.path.join(basetemp, 'unit_tests'),
-            os.path.join(testdir.abspath(), 'data'))
+    # Make the basetemp directory
+    os.makedirs(basetemp)
 
-        venv.run(command)
+    # Main test command
+    command = 'python -B -m pytest {} --basetemp {}'.format(
+        testdir.abspath(), os.path.join(basetemp, 'unit_tests'))
+
+    venv.run(command)
