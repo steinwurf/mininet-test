@@ -61,9 +61,9 @@ def find_version():
 VERSION = find_version()
 
 setup(
-    name='mininet-test',
+    name='mininet-testmonitor',
     version=VERSION,
-    description=('Mininet helper functionality'),
+    description=('Mininet testmonitor'),
     long_description=long_description,
     url='https://github.com/steinwurf/',
     author='Steinwurf ApS',
@@ -77,7 +77,7 @@ setup(
         "Intended Audience :: Developers",
         "Topic :: System :: Emulators",
     ],
-    keywords=('mininet-test'),
+    keywords=('mininet-testmonitor'),
     packages=find_packages(where='src', exclude=['test']),
     package_dir={"": "src"}
 )

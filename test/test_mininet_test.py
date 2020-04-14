@@ -2,21 +2,26 @@ import os
 import glob
 
 
-def test_run(sshdirectory):
+def test_run(vagrant):
 
-    wheels = glob.glob("dist/*.whl")
+    machine = vagrant.from_box(
+        box="steinwurf/mininet", name="mininet-testmonitor", reset=True)
 
-    if len(wheels) != 1:
-        raise RuntimeError(
-            "Unexpected number of wheels found {}".format(wheels))
+    with machine.ssh() as ssh:
 
-    wheel_path = wheels[0]
-    wheel_filename = os.path.basename(wheel_path)
+        wheels = glob.glob("dist/*.whl")
 
-    # Install the mininet_test pip package
-    sshdirectory.put_file(wheel_path)
-    sshdirectory.run('python -m pip install {}'.format(wheel_filename))
+        if len(wheels) != 1:
+                raise RuntimeError(
+                "Unexpected number of wheels found {}".format(wheels))
 
-    # Run the mininet script
-    sshdirectory.put_file('test/data/simple_ping.py')
-    sshdirectory.run('sudo python simple_ping.py')
+        wheel_path = wheels[0]
+        wheel_filename = os.path.basename(wheel_path)
+
+        # Install the mininet_test pip package
+        ssh.put_file(wheel_path)
+        ssh.run('python -m pip install {}'.format(wheel_filename))
+
+        # Run the mininet script
+        ssh.put_file('test/data/simple_ping.py')
+        ssh.run('sudo python simple_ping.py')
