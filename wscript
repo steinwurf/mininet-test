@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 # encoding: utf-8
 
+from waflib.Build import BuildContext
 import os
 import sys
 import shutil
@@ -15,8 +16,6 @@ import waflib
 top = '.'
 
 VERSION = '1.0.0'
-
-from waflib.Build import BuildContext
 
 
 class UploadContext(BuildContext):
@@ -55,6 +54,7 @@ def build(bld):
 
     if os.path.isdir(egg_info):
         waflib.extras.wurf.directory.remove_directory(path=egg_info)
+
 
 def _find_wheel(ctx):
     """ Find the .whl file in the dist folder. """
@@ -125,31 +125,21 @@ def package_box(ctx):
 
         import pytest_vagrant
 
-        log = pytest_vagrant.setup_logging()
-        shell = pytest_vagrant.Shell(log=log)
-        machines_dir = pytest_vagrant.default_machines_dir()
+        vagrant = pytest_vagrant.make_vagrant()
 
-        machine_factory = pytest_vagrant.MachineFactory(
-            shell=shell, machines_dir=machines_dir, ssh_factory=pytest_vagrant.SSH,
-            verbose=True)
-
-        vagrant = pytest_vagrant.Vagrant(machine_factory=machine_factory, shell=shell)
-
-        #machine = vagrant.from_box(box='ubuntu/eoan64', name='mininet-testmonitor', reset=True)
+        # machine = vagrant.from_box(
+        #     box='ubuntu/eoan64', name='mininet-testmonitor', reset=True)
 
         # with machine.ssh() as ssh:
         #     print(ssh.run('ls -la'))
 
-        #     try:
-        #         box_file = machine.package()
-        #     except Exception as e:
-        #         print(e)
-        #         print("ex: {}".format(e.output))
+        # try:
+        #     box_file = machine.package()
+        # except Exception as e:
+        #     print(e)
+        #     print("ex: {}".format(e.output))
 
-        #     machine.publish(box_tag="steinwurf/mininet-testmonitor",
-        #                     box_version="1.0.0", provider="virtualbox",
-        #                     box_file=box_file)
         with vagrant.cloud() as cloud:
-            cloud.login()
-
-
+            cloud.publish_box(box_tag="steinwurf/mininet-testmonitor",
+                              box_version="1.0.0", provider="virtualbox",
+                              box_file='/tmp/package.box')
